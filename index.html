@@ -2,91 +2,260 @@
 <html lang="zh-Hant">
 <head>
 	<meta charset="UTF-8">
-	<title>Online Plot!</title>
-	
-	<!--js_database------------------------------>
+	<title>Dynamic Function Plotter</title>
 	<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/9.5.0/math.js"></script>
-	
-	<!--CSS code------------------------------>
+	<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 	<style>
-	.Font36px {
-		font-size: 36px;
-	}
-
+		.Font36px { font-size: 36px; margin: 3px; }
+		.Font52px { font-size: 52px; margin: 5px; }
+		.form-block { border: 1px solid #ddd; margin-bottom: 15px; padding: 10px; border-radius: 8px; }
 	</style>
 </head>
 
 
+
 <body>
-	<h2 class="Font36px">Input a function：</h2>
-	<input class="Font36px" type="text" id="functionInput" value="cos(x)">
+	<h2 class="Font52px">Fuction Simulation!</h2>
+	<button class="Font36px" onclick="addBlock()">Add function</button>
+	<div id="container"></div>
+	
+<!--function intriduction -->
+<table border="1" cellspacing="0" cellpadding="5" style="border-collapse: collapse; width:90%; font-size:16px; text-align:center;">
+  <thead style="background-color:#f0f0f0;">
+    <tr>
+      <th>函數名稱</th><th style="border-right: 4px double black;">中文說明</th>
+      <th>函數名稱</th><th style="border-right: 4px double black;">中文說明</th>
+      <th>函數名稱</th><th style="border-right: 4px double black;">中文說明</th>
+      <th>函數名稱</th><th>中文說明</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>abs(x)</td><td style="border-right: 4px double black;">絕對值</td>
+      <td>ceil(x)</td><td style="border-right: 4px double black;">無條件進位</td>
+      <td>floor(x)</td><td style="border-right: 4px double black;">無條件捨去</td>
+      <td>round(x)</td><td>四捨五入</td>
+    </tr>
+    <tr>
+      <td>pow(x, y)</td><td style="border-right: 4px double black;">次方</td>
+      <td>sqrt(x)</td><td style="border-right: 4px double black;">平方根</td>
+      <td>sin(x)</td><td style="border-right: 4px double black;">正弦（弧度）</td>
+      <td>cos(x)</td><td>餘弦（弧度）</td>
+    </tr>
+    <tr>
+      <td>tan(x)</td><td style="border-right: 4px double black;">正切（弧度）</td>
+      <td>asin(x)</td><td style="border-right: 4px double black;">反正弦</td>
+      <td>acos(x)</td><td style="border-right: 4px double black;">反餘弦</td>
+      <td>atan(x)</td><td>反正切</td>
+    </tr>
+    <tr>
+      <td>atan2(y, x)</td><td style="border-right: 4px double black;">兩參數反正切</td>
+      <td>sinh(x)</td><td style="border-right: 4px double black;">雙曲正弦</td>
+      <td>cosh(x)</td><td style="border-right: 4px double black;">雙曲餘弦</td>
+      <td>tanh(x)</td><td>雙曲正切</td>
+    </tr>
+    <tr>
+      <td>exp(x)</td><td style="border-right: 4px double black;">自然指數 e 的 x 次方</td>
+      <td>log(x)</td><td style="border-right: 4px double black;">自然對數 ln(x)</td>
+      <td>log10(x)</td><td style="border-right: 4px double black;">以10為底的對數</td>
+      <td>log2(x)</td><td>以2為底的對數</td>
+    </tr>
+    <tr>
+      <td>factorial(x) / x!</td><td style="border-right: 4px double black;">階乘</td>
+      <td>sum([...])</td><td style="border-right: 4px double black;">總和</td>
+      <td>prod([...])</td><td style="border-right: 4px double black;">乘積</td>
+      <td>std([...])</td><td>標準差</td>
+    </tr>
+  </tbody>
+</table>
 
-	<button class="Font36px" onclick="resetGraph()">重設</button>
-	<button class="Font36px" id="toggleMoveBtn" onclick="toggleMove()">繪圖</button>
 
-	<div id="graph" style="width:90%;max-width:1200px;height:400px;"></div>
+
+<!--Fourier transform -->
+<table border="1" cellspacing="0" cellpadding="5" style="border-collapse: collapse; width:90%; font-size:16px; text-align:center;">
+	<thead>
+		<tr>
+		<th>常見波形</th> <th>公式</th> <th>傅立葉展開近似式</th> <th>複製到剪貼版</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>方波<br>Square wave</td>
+			<td>\[ f(x) = \frac{4}{\pi} \sum_{k=1}^\infty \frac{1}{2k-1} \sin\big[(2k-1)x\big] \]</td>
+			<td id="code1"><code>
+				4/pi*sin(pi*x) +
+				4/(3*pi)*sin(3*pi*x) +
+				4/(5*pi)*sin(5*pi*x) +
+				4/(7*pi)*sin(7*pi*x) +
+				4/(9*pi)*sin(9*pi*x) +
+				4/(11*pi)*sin(11*pi*x)
+			</code></td>
+			<td><button onclick="copyToClipboard('code1')">複製</button></td>
+		</tr>
+		<tr>
+			<td>三角波<br>Triangle wave</td>
+			<td>\[ f(x) = \frac{8}{\pi^2} \sum_{k=1,3,5,\ldots}^{\infty} \frac{(-1)^{\frac{k-1}{2}}}{k^2}\sin(kx) \]</td>
+			<td id="code2"><code>
+				(8/pi^2)*(sin(pi*x) -
+				1/9*sin(3*pi*x) +
+				1/25*sin(5*pi*x) -
+				1/49*sin(7*pi*x) +
+				1/81*sin(9*pi*x) -
+				1/121*sin(11*pi*x))
+			</code></td>
+			<td><button onclick="copyToClipboard('code2')">複製</button></td>
+		</tr>
+		<tr>
+			<td>鋸齒波<br>Sawtooth wave</td>
+			<td>\[ f(x) = \frac{2}{\pi} \sum_{n=1}^{\infty} (-1)^{n+1} \frac{\sin(nx)}{n} \]</td>
+			<td id="code3"><code>
+				(2/pi)*(sin(pi*x) -
+				1/2*sin(2*pi*x) +
+				1/3*sin(3*pi*x) -
+				1/4*sin(4*pi*x) +
+				1/5*sin(5*pi*x) -
+				1/6*sin(6*pi*x))
+			</code></td>
+			<td><button onclick="copyToClipboard('code3')">複製</button></td>
+		</tr>
+		<tr>
+			<td>脈波<br>Rectangular pulse</td>
+			<td>\[ f(x) = \frac{1}{2} + \frac{2}{\pi} \sum_{n=1}^{\infty} \frac{\sin(n \pi D)}{n} \cos(n \pi x) \]</td>
+			<td id="code4"><code>
+				(2/pi) * (sin(1*pi*0.25)/1)*cos(1*pi*x)
+				+ (2/pi) * (sin(2*pi*0.25)/2)*cos(2*pi*x)
+				+ (2/pi) * (sin(3*pi*0.25)/3)*cos(3*pi*x)
+				+ (2/pi) * (sin(4*pi*0.25)/4)*cos(4*pi*x)
+				+ (2/pi) * (sin(5*pi*0.25)/5)*cos(5*pi*x)
+				+ (2/pi) * (sin(6*pi*0.25)/6)*cos(6*pi*x)
+			</code></td>
+			<td><button onclick="copyToClipboard('code4')">複製</button></td>
+		</tr>	
+	</tbody>
+</table>
+
+
+<script>
+function copyToClipboard(id) {
+  const element = document.getElementById(id);
+  const text = element.innerText || element.textContent;
+
+  navigator.clipboard.writeText(text).then(() => {
+    //alert('已複製到剪貼簿');
+  }).catch(err => {
+    //alert('複製失敗: ' + err);
+  });
+}
+</script>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	<script>
-		let t = 10; // 起始右界
-		let intervalId;
-		
-		function resetGraph() {
-			clearInterval(intervalId); // 停止動畫
-			intervalId = null;         // 清空定時器id
-			t = 10;
-			plotGraph(false);          // 重新繪圖，不啟動動畫
-		}
-		
-		
-		function toggleMove() {
-			const btn = document.getElementById('toggleMoveBtn');
-			if (!intervalId) {
-				intervalId = setInterval(() => {
-				t += 0.1;
-				plotGraph();
-				}, 100);
-				btn.textContent = '停止';
-			} else {
-				clearInterval(intervalId);
-				intervalId = null;
-				btn.textContent = '移動';
-			}
-		}
+	let blocks = [];
+	let tArr = [];
+	let intervalIdArr = [];
 	
-		function plotGraph(dynamic = false) {
-			const exprStr = document.getElementById('functionInput').value;
-			const expr = math.parse(exprStr).compile();
-			const xValues = [];
-			const yValues = [];
-			for (let x = t - 10; x <= t; x += 0.1) {
-				xValues.push(x);
+	function addBlock(initVal = "cos(x)") {
+		const idx = blocks.length;
+		const idSuffix = "_" + idx;
+		tArr[idx] = 10;
+		intervalIdArr[idx] = null;
+	
+		const container = document.getElementById('container');
+		const formDiv = document.createElement('div');
+		formDiv.className = "form-block";
+		formDiv.id = "block" + idSuffix;
+	
+	formDiv.innerHTML =
+	'<input class="Font36px" type="text" id="functionInput' + idSuffix +
+	'" value="' + initVal + '">' + '<button class="Font36px" onclick="resetGraph(' +
+	idx + ')">Reset</button>' + '<button class="Font36px" id="toggleMoveBtn' +
+	idSuffix + '" onclick="toggleMove(' + idx + ')">Go</button>' +
+	'<button class="Font36px" onclick="removeBlock(' + idx + ')">Delete</button>' +
+	'<div id="graph' + idSuffix + '" style="width:90%;max-width:1200px;height:300px;"></div>';
+	
+		container.appendChild(formDiv);
+		blocks.push(formDiv);
+		plotGraph(idx, false);
+	}
+	
+	function removeBlock(idx) {
+		clearInterval(intervalIdArr[idx]);
+		intervalIdArr[idx] = null;
+		const container = document.getElementById('container');
+		if (blocks[idx]) {
+			container.removeChild(blocks[idx]);
+			blocks[idx] = null;
+		}
+	}
+	
+	function resetGraph(idx) {
+		clearInterval(intervalIdArr[idx]);
+		intervalIdArr[idx] = null;
+		tArr[idx] = 10;
+		plotGraph(idx, false);
+	}
+	
+	function toggleMove(idx) {
+		const btn = document.getElementById(`toggleMoveBtn_${idx}`);
+		if (!intervalIdArr[idx]) {
+			intervalIdArr[idx] = setInterval(() => {
+				tArr[idx] += 0.1;
+				plotGraph(idx);
+			}, 100);
+			btn.textContent = 'Stop';
+		} else {
+			clearInterval(intervalIdArr[idx]);
+			intervalIdArr[idx] = null;
+			btn.textContent = 'Go';
+		}
+	}
+	
+	function plotGraph(idx, dynamic = false) {
+		const idSuffix = "_" + idx;
+		const inputElem = document.getElementById(`functionInput${idSuffix}`);
+		if (!inputElem) return;
+		const exprStr = inputElem.value;
+		let expr;
+		try {
+			expr = math.parse(exprStr).compile();
+		} catch(e) {
+			Plotly.newPlot("graph" + idSuffix, [], { title: "error", xaxis: {}, yaxis: {} });
+			return;
+		}
+		const xValues = [];
+		const yValues = [];
+		for (let x = tArr[idx] - 10; x <= tArr[idx]; x += 0.01) {
+			xValues.push(x);
+			try {
 				yValues.push(expr.evaluate({ x }));
-			}
-			const trace = {
-				x: xValues,
-				y: yValues,
-				type: 'scatter',
-				mode: 'lines'
-			};
-			const layout = {
-				title: exprStr,
-				xaxis: { title: 'x' },
-				yaxis: { title: 'y' }
-			};
-			Plotly.newPlot('graph', [trace], layout);
-		
-			if(dynamic && !intervalId) {
-				intervalId = setInterval(() => {
-					t += 0.1;
-					plotGraph(true);
-				}, 100);
+			} catch {
+				yValues.push(NaN);
 			}
 		}
+		const trace = { x: xValues, y: yValues, type: 'scatter', mode: 'lines' };
+		const layout = { title: exprStr, xaxis: { title: 'x' }, yaxis: { title: 'y' } };
+		Plotly.newPlot(`graph${idSuffix}`, [trace], layout);
+	}
 	
-	
-
+	// inital page
+	addBlock();
 	
 	</script>
-
 </body>
+
+
+
 </html>
